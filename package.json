@@ -1,0 +1,18 @@
+{
+  "dependencies": {
+    "csv-writer": "^1.6.0",
+    "express": "^4.21.1",
+    "puppeteer": "^23.8.0"
+  },
+  "type": "module",
+  "name": "scraper-tests",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

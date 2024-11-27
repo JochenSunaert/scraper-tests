@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrape Products</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <img src="images.png">
+    <h1>Data ophalen van de TORFS aanbiedingen?</h1>
+    <div class="zoeken">
+        <p>Vul jouw zoekterm in</p>
+        <input id="queryInput" type="text" placeholder="vb: Vans">
+        <div class="buttons">
+            <button id="scrapeButton">Ophalen</button>
+            <button id="downloadButton" style="display:none;">Download CSV</button> <!-- Hidden by default -->
+        </div>
+    </div>
+
+    <div id="timer"></div>
+    <div id="results"></div>
+    <footer>
+        <p>by Jochen Sunaert </p>
+    </footer>
+    <script>
+        document.getElementById('scrapeButton').addEventListener('click', async () => {
+            const queryInput = document.getElementById('queryInput');
+            const resultsDiv = document.getElementById('results');
+            const timerDiv = document.getElementById('timer');
+            const downloadButton = document.getElementById('downloadButton');
+            let secondsElapsed = 0;
+            let timer;
+
+            // Start the timer
+            timerDiv.textContent = "Elapsed time: 0 seconds";
+            timer = setInterval(() => {
+                secondsElapsed++;
+                timerDiv.textContent = `Elapsed time: ${secondsElapsed} seconds`;
+            }, 1000);
+
+            try {
+                const searchQuery = queryInput.value.trim();
+                if (!searchQuery) {
+                    alert("Please enter a valid search term.");
+                    clearInterval(timer);
+                    timerDiv.textContent = '';
+                    resultsDiv.innerHTML = '';
+                    return;
+                }
+
+                // Fetch scraped products from the backend
+                const response = await fetch(`/scrape?query=${encodeURIComponent(searchQuery)}`);
+                const products = await response.json();
+
+                // Clear loading message and stop timer
+                resultsDiv.innerHTML = '';
+                clearInterval(timer);
+                timerDiv.textContent = `Scraping completed in ${secondsElapsed} seconds`;
+
+                // Display the products
+                if (products.length > 0) {
+                    const productList = products.map(product => {
+                        return `
+                            <li>
+                                <img src="${product.image}" alt="${product.name}">
+                                <div class="product-info">
+                                    <h3>${product.name}</h3>
+                                    <p><strong>Brand:</strong> ${product.brand}</p>
+                                    <p><strong>Price:</strong> ${product.price}</p>
+                                    <a href="${product.productPage}" target="_blank">View Product</a>
+                                </div>
+                            </li>
+                        `;
+                    }).join('');
+                    resultsDiv.innerHTML = `<ul>${productList}</ul>`;
+                    // Show the download button when products are available
+                    downloadButton.style.display = 'inline-block';
+
+                    // Attach a function to download the CSV file
+                    downloadButton.onclick = () => {
+                        downloadCSV(products);
+                    };
+                } else {
+                    resultsDiv.innerHTML = '<p>No products found.</p>';
+                    downloadButton.style.display = 'none'; // Hide download button if no products
+                }
+            } catch (error) {
+                // Stop timer and show error message
+                clearInterval(timer);
+                timerDiv.textContent = '';
+                resultsDiv.innerHTML = '<p>Error occurred while scraping. Please try again.</p>';
+            }
+        });
+
+        // Function to convert the products data to CSV format
+        function downloadCSV(products) {
+            const header = ['Name', 'Brand', 'Price', 'Image', 'Product Page', 'Link'];
+            const rows = products.map(product => [
+                product.name,
+                product.brand,
+                product.price, // Include price in CSV
+                product.image,
+                product.productPage,
+                product.link
+            ]);
+
+            // Create the CSV string
+            let csvContent = "data:text/csv;charset=utf-8," 
+                + header.join(",") + "\n"
+                + rows.map(row => row.join(",")).join("\n");
+
+            // Create a downloadable link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "products.csv");
+
+            // Programmatically click the link to trigger download
+            link.click();
+        }
+    </script>
+</body>
+</html>
